@@ -326,7 +326,7 @@ async def upload_handler(event):
                     # Use N_m3u8DL-RE for video downloads.
                     n_cmd = (
                         f'./N_m3u8DL-RE "{url}" --save-name "{file_name}" '
-                        f'--del-after-done --thread-count 16 --auto-select'
+                        f'--del-after-done --thread-count 16 --auto-select --live-perform-as-vod'
                     )
                     max_retries = 3
                     retries = 0
