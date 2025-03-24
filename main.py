@@ -354,10 +354,10 @@ async def upload_handler(event):
                         continue
                 else:
                     # Always use N_m3u8DL-RE for video downloads.
-                    # Updated command options:
+                    # Updated command options with auto-select enabled.
                     n_cmd = (
                         f'./N_m3u8DL-RE "{url}" --save-name "{file_name}" '
-                        f'--del-after-done --thread-count 16 --mux-after-done default'
+                        f'--del-after-done --thread-count 16 --auto-select -M ffmpeg'
                     )
                     max_retries = 3
                     retries = 0
