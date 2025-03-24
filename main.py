@@ -354,10 +354,11 @@ async def upload_handler(event):
                         continue
                 else:
                     # Always use N_m3u8DL-RE for video downloads.
-                    # Updated command options:
+                    # Note the use of "./N_m3u8DL-RE" to reference the local binary.
+                    # Supply an empty argument for --mux-after-done.
                     n_cmd = (
                         f'./N_m3u8DL-RE "{url}" --save-name "{file_name}" '
-                        f'--del-after-done --thread-count 16 --mux-after-done'
+                        f'--del-after-done --thread-count 16 --mux-after-done ""'
                     )
                     max_retries = 3
                     retries = 0
