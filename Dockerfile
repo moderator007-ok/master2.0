@@ -10,8 +10,8 @@ RUN apt-get update && apt-get upgrade -y && \
        gcc libffi-dev ffmpeg aria2 git wget curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create symlinks for ease of use
-RUN ln -s /usr/bin/python3.10 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip
+# Create (force) symlinks for ease of use
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Set working directory
 WORKDIR /app/
