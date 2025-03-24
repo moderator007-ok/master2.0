@@ -92,7 +92,7 @@ def generate_thumbnail(video_file, thumbnail_path, time_offset="00:00:01.000"):
     Returns:
         str or None: Returns the thumbnail path if successful, otherwise None.
     """
-    ffmpeg_executable = "ffmpeg"  # Change to absolute path if necessary (e.g., '/usr/bin/ffmpeg')
+    ffmpeg_executable = "ffmpeg"  # Change to absolute path if necessary
     command = [
         ffmpeg_executable,
         "-i", video_file,
@@ -308,35 +308,8 @@ async def upload_handler(event):
             file_name = f'{str(count).zfill(3)}) {name1[:60]}'
 
             # -------------------------------------------------------------------
-            # Determine the yt-dlp format template based on URL type
-            # -------------------------------------------------------------------
-            if "youtu" in url:
-                ytf = f"b[height<={raw_res}][ext=mp4]/bv[height<={raw_res}][ext=mp4]+ba[ext=m4a]/b[ext=mp4]"
-            else:
-                ytf = f"b[height<={raw_res}]/bv[height<={raw_res}]+ba/b/bv+ba"
-
-            # -------------------------------------------------------------------
-            # Build the yt-dlp command for video downloading with -j 128 added
-            # -------------------------------------------------------------------
-            if "jw-prod" in url:
-                cmd = (
-                    f'yt-dlp --external-downloader aria2c '
-                    f'--external-downloader-args "-j 128 -x 16 -s 16 -k 1M --timeout=120 --connect-timeout=120 '
-                    f'--max-download-limit=0 --max-overall-download-limit=0 '
-                    f'--enable-http-pipelining=true --file-allocation=falloc" '
-                    f'-o "{file_name}.mp4" "{url}"'
-                )
-            else:
-                cmd = (
-                    f'yt-dlp --external-downloader aria2c '
-                    f'--external-downloader-args "-j 128 -x 16 -s 16 -k 1M --timeout=120 --connect-timeout=120 '
-                    f'--max-download-limit=0 --max-overall-download-limit=0 '
-                    f'--enable-http-pipelining=true --file-allocation=falloc" '
-                    f'-f "{ytf}" "{url}" -o "{file_name}.mp4"'
-                )
-
-            # -------------------------------------------------------------------
-            # Try downloading and then uploading the file with retry logic
+            # For Drive or PDF links, use existing methods.
+            # Otherwise, always use N_m3u8DL-RE for video downloads.
             # -------------------------------------------------------------------
             try:
                 cc = (
@@ -350,9 +323,6 @@ async def upload_handler(event):
                     f"**Downloaded By :** TechMon ❤️‍🔥 @TechMonX"
                 )
 
-                # ----------------------------------------------------------------
-                # Special handling for Drive and PDF links
-                # ----------------------------------------------------------------
                 if "drive" in url:
                     try:
                         ka = await helper.download(url, file_name)
@@ -363,7 +333,7 @@ async def upload_handler(event):
                     except Exception as e:
                         await conv.send_message(str(e))
                         await asyncio.sleep(5)
-                        continue  # Do not increment counter if download fails
+                        continue
                 elif ".pdf" in url:
                     try:
                         cmd_pdf = (
@@ -381,39 +351,33 @@ async def upload_handler(event):
                     except Exception as e:
                         await conv.send_message(str(e))
                         await asyncio.sleep(5)
-                        continue  # Do not increment counter if download fails
+                        continue
                 else:
-                    # Implement retry mechanism for video downloads
+                    # Always use N_m3u8DL-RE for video downloads.
+                    n_cmd = (
+                        f'N_m3u8DL-RE "{url}" --save-name "{file_name}" '
+                        f'--enableDelAfterDone --max-threads 16 --mux-after-done'
+                    )
                     max_retries = 3
                     retries = 0
                     while retries < max_retries:
                         try:
-                            dl_msg = await conv.send_message(
-                                f"**⥥ DOWNLOADING... »**\n\n"
-                                f"**Name »** `{file_name}`\n"
-                                f"**Quality »** {raw_res}\n\n"
-                                f"**URL »** `{url}`"
-                            )
-                            res_file = await helper.download_video(url, cmd, file_name)
-                            await bot.delete_messages(event.chat_id, dl_msg.id)
+                            subprocess.run(n_cmd, shell=True, check=True)
+                            res_file = f"{file_name}.mp4"
                             break
                         except Exception as e:
-                            # Check for common transient issues.
-                            if ("HTTP Error 500" in str(e) or 
-                                "Internal Server Error" in str(e) or 
-                                "timeout" in str(e)):
-                                # Wait a randomized amount between 10 and 20 seconds to allow server response.
+                            if ("HTTP Error 500" in str(e) or "timeout" in str(e)):
                                 wait_time = random.randint(10, 20)
-                                await asyncio.sleep(wait_time)
+                                time.sleep(wait_time)
                                 retries += 1
                                 continue
                             else:
                                 raise e
                     else:
-                        # Exceeded maximum retries; report error and move to next link.
                         await conv.send_message(f"Failed to download after {max_retries} attempts.")
                         continue
 
+                    # Process the downloaded video file.
                     clip = VideoFileClip(res_file)
                     duration = int(clip.duration)
                     width, height = clip.size
@@ -496,7 +460,6 @@ async def upload_handler(event):
                     f"**URL »** `{url}`"
                 )
                 await conv.send_message(error_text)
-                # Do not increment counter if there is an error; continue with the same count for the next link.
                 continue
 
         # =============================================================================
