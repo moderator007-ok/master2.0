@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import time
+import random
 import asyncio
 import requests
 import subprocess
@@ -335,7 +336,7 @@ async def upload_handler(event):
                 )
 
             # -------------------------------------------------------------------
-            # Try downloading and then uploading the file
+            # Try downloading and then uploading the file with retry logic
             # -------------------------------------------------------------------
             try:
                 cc = (
@@ -382,14 +383,36 @@ async def upload_handler(event):
                         await asyncio.sleep(5)
                         continue  # Do not increment counter if download fails
                 else:
-                    dl_msg = await conv.send_message(
-                        f"**⥥ DOWNLOADING... »**\n\n"
-                        f"**Name »** `{file_name}`\n"
-                        f"**Quality »** {raw_res}\n\n"
-                        f"**URL »** `{url}`"
-                    )
-                    res_file = await helper.download_video(url, cmd, file_name)
-                    await bot.delete_messages(event.chat_id, dl_msg.id)
+                    # Implement retry mechanism for video downloads
+                    max_retries = 3
+                    retries = 0
+                    while retries < max_retries:
+                        try:
+                            dl_msg = await conv.send_message(
+                                f"**⥥ DOWNLOADING... »**\n\n"
+                                f"**Name »** `{file_name}`\n"
+                                f"**Quality »** {raw_res}\n\n"
+                                f"**URL »** `{url}`"
+                            )
+                            res_file = await helper.download_video(url, cmd, file_name)
+                            await bot.delete_messages(event.chat_id, dl_msg.id)
+                            break
+                        except Exception as e:
+                            # Check for common transient issues.
+                            if ("HTTP Error 500" in str(e) or 
+                                "Internal Server Error" in str(e) or 
+                                "timeout" in str(e)):
+                                # Wait a randomized amount between 10 and 20 seconds to allow server response.
+                                wait_time = random.randint(10, 20)
+                                await asyncio.sleep(wait_time)
+                                retries += 1
+                                continue
+                            else:
+                                raise e
+                    else:
+                        # Exceeded maximum retries; report error and move to next link.
+                        await conv.send_message(f"Failed to download after {max_retries} attempts.")
+                        continue
 
                     clip = VideoFileClip(res_file)
                     duration = int(clip.duration)
