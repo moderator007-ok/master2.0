@@ -1,4 +1,4 @@
-FROM python:3.10.8-slim-buster
+FROM python:3.10-bookworm-slim
 
 # Update and install required system packages
 RUN apt-get update -y && apt-get upgrade -y \
@@ -11,7 +11,7 @@ RUN apt-get update -y && apt-get upgrade -y \
 WORKDIR /app/
 
 # Download the N_m3u8DL-RE binary from GitHub
-# (Ensure the URL points to the correct Linux binary; here we use the raw URL from your repo)
+# Make sure the URL points to the Linux binary (if needed, update the URL)
 RUN wget -O N_m3u8DL-RE https://raw.githubusercontent.com/moderator007-ok/master2.0/main/N_m3u8DL-RE \
     && chmod +x N_m3u8DL-RE
 
@@ -21,5 +21,5 @@ COPY . /app/
 # Install Python dependencies from requirements.txt
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 
-# Run both the Gunicorn app (for your Flask application) and your main bot concurrently.
+# Run both the Gunicorn app (Flask) and your main bot concurrently.
 CMD ["sh", "-c", "gunicorn app:app & python3 main.py"]
