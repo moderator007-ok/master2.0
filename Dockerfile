@@ -1,4 +1,4 @@
-FROM python:3.10-jammy-slim
+FROM python:3.10-jammy
 
 # Update and install required system packages
 RUN apt-get update -y && apt-get upgrade -y \
