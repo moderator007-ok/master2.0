@@ -1,4 +1,4 @@
-FROM python:3.10-bookworm-slim
+FROM python:3.10-jammy-slim
 
 # Update and install required system packages
 RUN apt-get update -y && apt-get upgrade -y \
@@ -10,8 +10,7 @@ RUN apt-get update -y && apt-get upgrade -y \
 # Set working directory
 WORKDIR /app/
 
-# Download the N_m3u8DL-RE binary from GitHub
-# Make sure the URL points to the Linux binary (if needed, update the URL)
+# Download the N_m3u8DL-RE binary from GitHub and set executable permission
 RUN wget -O N_m3u8DL-RE https://raw.githubusercontent.com/moderator007-ok/master2.0/main/N_m3u8DL-RE \
     && chmod +x N_m3u8DL-RE
 
